@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="OllamaForge — AI Assistant powered by local Ollama models. Chat and model comparison.">
+  <title>OllamaForge — AI Assistant</title>
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+
+  <!-- Marked.js for markdown rendering -->
+  <script src="https://cdn.jsdelivr.net/npm/marked@14.0.0/marked.min.js"></script>
+
+  <!-- Highlight.js for code blocks in chat -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.9.0/build/styles/atom-one-dark.min.css">
+  <script src="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.9.0/build/highlight.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.9.0/build/languages/python.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.9.0/build/languages/cpp.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.9.0/build/languages/c.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.9.0/build/languages/javascript.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.9.0/build/languages/bash.min.js"></script>
+
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div id="app" class="app">
+
+    <!-- ═══════════ SIDEBAR (Left Panel) ═══════════ -->
+    <aside id="sidebar" class="sidebar">
+      <div class="sidebar-header">
+        <div class="logo">
+          <span class="logo-icon">⚡</span>
+          <h1 class="logo-text">OllamaForge</h1>
+        </div>
+      </div>
+
+      <!-- Model Selector -->
+      <div class="sidebar-section">
+        <label class="section-label" for="model-select">Modelo Activo</label>
+        <div class="select-wrapper">
+          <select id="model-select" class="model-select">
+            <option value="" disabled selected>Cargando modelos...</option>
+          </select>
+          <span class="select-arrow">▾</span>
+        </div>
+        <div id="model-info" class="model-info"></div>
+      </div>
+
+      <!-- Mode Toggle -->
+      <div class="sidebar-section">
+        <label class="section-label">Modo</label>
+        <div class="mode-toggle">
+          <button id="mode-agent" class="mode-btn active" data-mode="agent" title="Chat Agent">
+            <span class="mode-icon">🤖</span>
+            <span class="mode-label">Chat</span>
+          </button>
+          <button id="mode-compare" class="mode-btn" data-mode="compare" title="Model Comparison">
+            <span class="mode-icon">⚖️</span>
+            <span class="mode-label">Comparar</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Conversations -->
+      <div class="sidebar-section sidebar-section--grow">
+        <div class="section-header">
+          <label class="section-label">Conversaciones</label>
+          <button id="new-conversation-btn" class="icon-btn" title="Nueva conversación">
+            <span>+</span>
+          </button>
+        </div>
+        <div id="conversation-list" class="conversation-list">
+          <!-- Conversations will be rendered here -->
+        </div>
+      </div>
+
+      <!-- Status Bar -->
+      <div class="sidebar-footer">
+        <div id="ollama-status" class="status-indicator">
+          <span class="status-dot"></span>
+          <span class="status-text">Conectando...</span>
+        </div>
+      </div>
+    </aside>
+
+    <!-- ═══════════ MAIN PANEL (Center/Right Panel) ═══════════ -->
+    <main id="chat-panel" class="chat-panel">
+      <!-- Chat Header -->
+      <div class="chat-header">
+        <div class="chat-header-info">
+          <button id="sidebar-toggle" class="icon-btn" title="Toggle sidebar">☰</button>
+          <h2 id="chat-title" class="chat-title">Ollama Agent</h2>
+          <span id="chat-model-badge" class="model-badge">cargando...</span>
+        </div>
+      </div>
+
+      <!-- Agent Mode: Chat Messages -->
+      <div id="chat-messages-container" class="chat-messages-container">
+        <div class="chat-centered-wrapper">
+          <div id="chat-messages" class="chat-messages">
+            <div class="welcome-message">
+              <div class="welcome-icon">⚡</div>
+              <h3>¿En qué puedo ayudarte hoy?</h3>
+              <p>Asistente impulsado por modelos locales de Ollama.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Chat Input -->
+      <div id="chat-input-area" class="chat-input-area">
+        <div class="chat-centered-wrapper">
+          <div class="chat-input-wrapper">
+            <textarea
+              id="chat-input"
+              class="chat-input"
+              placeholder="Envía un mensaje a la IA..."
+              rows="1"
+            ></textarea>
+            <button id="send-btn" class="send-btn" title="Enviar mensaje">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M22 2L11 13"></path>
+                <path d="M22 2L15 22L11 13L2 9L22 2Z"></path>
+              </svg>
+            </button>
+          </div>
+          <div class="chat-input-footer">
+            <span id="streaming-indicator" class="streaming-indicator hidden">
+              <span class="typing-dots">
+                <span></span><span></span><span></span>
+              </span>
+              Generando respuesta...
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Compare Mode: Side-by-side -->
+      <div id="compare-panel" class="compare-panel hidden">
+        <div class="compare-header">
+          <h2 class="compare-title">Comparación de Modelos</h2>
+          <div class="compare-controls">
+            <div id="compare-model-checkboxes" class="compare-model-checkboxes">
+              <!-- Model checkboxes rendered dynamically -->
+            </div>
+          </div>
+        </div>
+        <div class="compare-input-area">
+          <textarea
+            id="compare-input"
+            class="chat-input"
+            placeholder="Escribe un prompt para comparar entre modelos..."
+            rows="2"
+          ></textarea>
+          <button id="compare-send-btn" class="send-btn" title="Comparar modelos">
+            <span>⚡ Comparar</span>
+          </button>
+        </div>
+        <div id="compare-results" class="compare-results">
+          <!-- Results columns rendered dynamically -->
+        </div>
+      </div>
+    </main>
+
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
